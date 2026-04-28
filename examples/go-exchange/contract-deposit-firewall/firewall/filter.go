@@ -14,8 +14,23 @@ const (
 	Quarantine    Decision = "quarantine"
 )
 
-// FilterDeposit evaluates a RoutingResult and returns a deposit-processing decision.
-func FilterDeposit(result routing.RoutingResult) Decision {
+// FilterDeposit evaluates a deposit address and returns a routing decision.
+// This function extracts routing information from the address and applies warning-to-decision mapping.
+func FilterDeposit(addr string) Decision {
+	// Parse the address to get routing information
+	input := routing.RoutingInput{
+		Destination: addr,
+		MemoType:    "none",
+		MemoValue:   "",
+	}
+
+	result := routing.ExtractRouting(input)
+	return filterDepositFromResult(result)
+}
+
+// filterDepositFromResult evaluates a RoutingResult and returns a deposit-processing decision.
+// This is the core logic that maps warnings to decisions based on severity.
+func filterDepositFromResult(result routing.RoutingResult) Decision {
 	// If no warnings and routing source is muxed or memo, return AutoCredit
 	if len(result.Warnings) == 0 && (result.RoutingSource == "muxed" || result.RoutingSource == "memo") {
 		return AutoCredit
@@ -65,17 +80,4 @@ func FilterDeposit(result routing.RoutingResult) Decision {
 	}
 
 	return highestDecision
-}
-
-// FilterDepositFromAddress evaluates a deposit address and returns a routing decision.
-func FilterDepositFromAddress(addr string) Decision {
-	// Parse the address to get routing information
-	input := routing.RoutingInput{
-		Destination: addr,
-		MemoType:    "none",
-		MemoValue:   "",
-	}
-
-	result := routing.ExtractRouting(input)
-	return FilterDeposit(result)
 }
